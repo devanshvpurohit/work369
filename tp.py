@@ -26,34 +26,36 @@ def get_cricket_stats(player_name):
     except Exception as e:
         return f"⚠️ Error fetching stats: {str(e)}"
 
-# Load player names from CSV
-players_df = pd.read_csv("players.csv")  # Ensure you have a CSV file with a 'Player Name' column
-
 # Streamlit UI
 st.title("🏏 Cricket Player Stats Viewer")
 
-selected_player = st.selectbox("Select a Player:", players_df["Player Name"].tolist())
+# File uploader for CSV
+uploaded_file = st.file_uploader("Upload CSV file with player names", type=["csv"])
 
-if st.button("Get Stats") and selected_player:
-    stats = get_cricket_stats(selected_player)
-    st.markdown(f"### 📊 Stats for {selected_player}")
+if uploaded_file is not None:
+    players_df = pd.read_csv(uploaded_file)  # Ensure CSV has a 'Player Name' column
+    selected_player = st.selectbox("Select a Player:", players_df["Player Name"].tolist())
     
-    # Convert stats to a table format
-    stats_list = stats.split(",")
-    columns = ["Stat Type", "Value"]
-    if len(stats_list) == 3:
-        data = [
-            ["Strike Rate", stats_list[0]],
-            ["Highest Score", stats_list[1]],
-            ["Batting Average", stats_list[2]]
-        ]
-    elif len(stats_list) == 2:
-        data = [
-            ["Average Wickets", stats_list[0]],
-            ["Runs Conceded", stats_list[1]]
-        ]
-    else:
-        data = [["Data", stats]]
-    
-    df = pd.DataFrame(data, columns=columns)
-    st.table(df)
+    if st.button("Get Stats") and selected_player:
+        stats = get_cricket_stats(selected_player)
+        st.markdown(f"### 📊 Stats for {selected_player}")
+        
+        # Convert stats to a table format
+        stats_list = stats.split(",")
+        columns = ["Stat Type", "Value"]
+        if len(stats_list) == 3:
+            data = [
+                ["Strike Rate", stats_list[0]],
+                ["Highest Score", stats_list[1]],
+                ["Batting Average", stats_list[2]]
+            ]
+        elif len(stats_list) == 2:
+            data = [
+                ["Average Wickets", stats_list[0]],
+                ["Runs Conceded", stats_list[1]]
+            ]
+        else:
+            data = [["Data", stats]]
+        
+        df = pd.DataFrame(data, columns=columns)
+        st.table(df)
