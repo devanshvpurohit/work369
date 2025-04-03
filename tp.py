@@ -26,14 +26,17 @@ def get_cricket_stats(player_name):
     except Exception as e:
         return f"⚠️ Error fetching stats: {str(e)}"
 
+# Load player names from CSV
+players_df = pd.read_csv("players.csv")  # Ensure you have a CSV file with a 'Player Name' column
+
 # Streamlit UI
 st.title("🏏 Cricket Player Stats Viewer")
 
-player_name = st.text_input("Enter Player Name:")
+selected_player = st.selectbox("Select a Player:", players_df["Player Name"].tolist())
 
-if st.button("Get Stats") and player_name:
-    stats = get_cricket_stats(player_name)
-    st.markdown(f"### 📊 Stats for {player_name}")
+if st.button("Get Stats") and selected_player:
+    stats = get_cricket_stats(selected_player)
+    st.markdown(f"### 📊 Stats for {selected_player}")
     
     # Convert stats to a table format
     stats_list = stats.split(",")
