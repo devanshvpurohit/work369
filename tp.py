@@ -12,13 +12,16 @@ model = genai.GenerativeModel("gemini-1.5-flash")
 
 def get_cricket_stats(player_name):
     prompt = (
-        f"Provide a detailed cricket statistics summary for {player_name}. "
-        "Include:\n- Batting average\n- Bowling average\n- Total runs\n- Total wickets\n"
-        "Format it as a cricket card with key stats and major achievements."
+        f"Provide only the numerical cricket statistics for {player_name}. "
+        "Include:\n"
+        "- If the player is a batsman: Strike Rate, Highest Score, Batting Average.\n"
+        "- If the player is a bowler: Average Wickets, Runs Conceded.\n"
+        "- If the player is an all-rounder: Strike Rate, Batting Average.\n"
+        "Respond with only the numbers separated by commas, nothing else."
     )
     try:
         response = model.generate_content(prompt)
-        return response.text if response else "No data available."
+        return response.text.strip() if response else "No data available."
     except Exception as e:
         return f"⚠️ Error fetching stats: {str(e)}"
 
