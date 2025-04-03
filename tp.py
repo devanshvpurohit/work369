@@ -2,6 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 import pandas as pd
 import io
+import time
 
 # 🔹 Quick Fix: Hardcode the API key (Not recommended for production)
 API_KEY = "AIzaSyBmETEzYBcKH6hhBUrX2XwkNZLA9Js_YLA"
@@ -41,7 +42,10 @@ if uploaded_file is not None:
     
     # Generate stats for all players
     stats_data = []
-    for player in players_df["Player Name"].tolist():
+    progress_bar = st.progress(0)
+    total_players = len(players_df)
+    
+    for index, player in enumerate(players_df["Player Name"].tolist()):
         stats = get_cricket_stats(player)
         stats_list = stats.split(",")
         
@@ -51,6 +55,10 @@ if uploaded_file is not None:
             stats_data.append([player, stats_list[0], stats_list[1], "N/A"])
         else:
             stats_data.append([player, "N/A", "N/A", "N/A"])
+        
+        # Update progress bar
+        progress_bar.progress((index + 1) / total_players)
+        time.sleep(0.5)  # Adding delay to simulate processing time
     
     stats_df = pd.DataFrame(stats_data, columns=["Player Name", "Strike Rate / Avg Wickets", "Highest Score / Runs Conceded", "Batting Average"])
     
