@@ -60,7 +60,10 @@ if uploaded_file is not None:
         progress_bar.progress((index + 1) / total_players)
         time.sleep(0.5)  # Adding delay to simulate processing time
     
+    # Display stats only after processing all players
+    st.success("✅ All player stats have been generated!")
     stats_df = pd.DataFrame(stats_data, columns=["Player Name", "Strike Rate / Avg Wickets", "Highest Score / Runs Conceded", "Batting Average"])
+    st.dataframe(stats_df)
     
     # Download button for CSV
     csv_buffer = io.StringIO()
@@ -71,29 +74,3 @@ if uploaded_file is not None:
         file_name="player_stats.csv",
         mime="text/csv"
     )
-    
-    selected_player = st.selectbox("Select a Player:", players_df["Player Name"].tolist())
-    
-    if st.button("Get Stats") and selected_player:
-        stats = get_cricket_stats(selected_player)
-        st.markdown(f"### 📊 Stats for {selected_player}")
-        
-        # Convert stats to a table format
-        stats_list = stats.split(",")
-        columns = ["Stat Type", "Value"]
-        if len(stats_list) == 3:
-            data = [
-                ["Strike Rate", stats_list[0]],
-                ["Highest Score", stats_list[1]],
-                ["Batting Average", stats_list[2]]
-            ]
-        elif len(stats_list) == 2:
-            data = [
-                ["Average Wickets", stats_list[0]],
-                ["Runs Conceded", stats_list[1]]
-            ]
-        else:
-            data = [["Data", stats]]
-        
-        df = pd.DataFrame(data, columns=columns)
-        st.table(df)
