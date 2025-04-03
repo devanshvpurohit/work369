@@ -2,59 +2,55 @@ import streamlit as st
 import google.generativeai as genai
 import pandas as pd
 
+# 🔹 Quick Fix: Hardcode the API key (Not recommended for production)
+API_KEY = "AIzaSyBmETEzYBcKH6hhBUrX2XwkNZLA9Js_YLA"
+
 # Configure Gemini API
-genai.configure(api_key="YOUR_GEMINI_API_KEY")
+genai.configure(api_key=API_KEY)
+
+# Define the model (using Gemini 1.5 Flash)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-def get_player_score(player_name):
-    """Fetch player historical performance using Gemini."""
-    prompt = f"Provide a summary performance score (out of 100) for the cricketer {player_name} based on historical IPL data."
+def get_cricket_stats(player_name):
+    prompt = (
+        f"Provide only the numerical cricket statistics for {player_name}. "
+        "Include:\n"
+        "- If the player is a batsman: Strike Rate, Highest Score, Batting Average.\n"
+        "- If the player is a bowler: Average Wickets, Runs Conceded.\n"
+        "- If the player is an all-rounder: Strike Rate, Batting Average.\n"
+        "Respond with only the numbers separated by commas, nothing else."
+    )
     try:
         response = model.generate_content(prompt)
-        score = extract_score(response.text)
-        return score
+        return response.text.strip() if response else "No data available."
     except Exception as e:
-        st.error(f"Error fetching score for {player_name}: {e}")
-        return 50  # Default score
-
-# Mock function to extract score from Gemini's response
-def extract_score(response_text):
-    try:
-        return int(response_text.split()[0])  # Assuming response starts with score
-    except:
-        return 50  # Default score
+        return f"⚠️ Error fetching stats: {str(e)}"
 
 # Streamlit UI
-st.title("IPL 2025 Team Ranking Based on Player History")
+st.title("🏏 Cricket Player Stats Viewer")
 
-# Predefined IPL teams and players
-ipl_teams = {
-    "Mumbai Indians": ["Rohit Sharma", "Suryakumar Yadav", "Jasprit Bumrah", "Ishan Kishan", "Hardik Pandya"],
-    "Chennai Super Kings": ["MS Dhoni", "Ravindra Jadeja", "Ruturaj Gaikwad", "Deepak Chahar", "Devon Conway"],
-    "Royal Challengers Bangalore": ["Virat Kohli", "Faf du Plessis", "Glenn Maxwell", "Mohammed Siraj", "Dinesh Karthik"],
-    "Kolkata Knight Riders": ["Shreyas Iyer", "Andre Russell", "Sunil Narine", "Rinku Singh", "Mitchell Starc"],
-    "Delhi Capitals": ["Rishabh Pant", "David Warner", "Kuldeep Yadav", "Prithvi Shaw", "Axar Patel"],
-    "Rajasthan Royals": ["Sanju Samson", "Jos Buttler", "Yuzvendra Chahal", "Trent Boult", "Shimron Hetmyer"],
-    "Punjab Kings": ["Shikhar Dhawan", "Liam Livingstone", "Sam Curran", "Kagiso Rabada", "Arshdeep Singh"],
-    "Sunrisers Hyderabad": ["Aiden Markram", "Bhuvneshwar Kumar", "Heinrich Klaasen", "Umran Malik", "Washington Sundar"],
-    "Lucknow Super Giants": ["KL Rahul", "Quinton de Kock", "Marcus Stoinis", "Ravi Bishnoi", "Krunal Pandya"],
-    "Gujarat Titans": ["Shubman Gill", "Rashid Khan", "Mohammed Shami", "Rahul Tewatia", "David Miller"]
-}
+player_name = st.text_input("Enter Player Name:")
 
-# Team selection
-top_teams = st.multiselect("Select 10 teams to rank", list(ipl_teams.keys()), default=list(ipl_teams.keys())[:10])
-
-if st.button("Rank Teams"):
-    team_data = []
-    for team in top_teams:
-        players = ipl_teams[team]
-        total_score = sum(get_player_score(player) for player in players)
-        team_data.append([team, total_score])
+if st.button("Get Stats") and player_name:
+    stats = get_cricket_stats(player_name)
+    st.markdown(f"### 📊 Stats for {player_name}")
     
-    ranked_teams = sorted(team_data, key=lambda x: x[1], reverse=True)
-    df = pd.DataFrame(ranked_teams, columns=["Team", "Score"])
+    # Convert stats to a table format
+    stats_list = stats.split(",")
+    columns = ["Stat Type", "Value"]
+    if len(stats_list) == 3:
+        data = [
+            ["Strike Rate", stats_list[0]],
+            ["Highest Score", stats_list[1]],
+            ["Batting Average", stats_list[2]]
+        ]
+    elif len(stats_list) == 2:
+        data = [
+            ["Average Wickets", stats_list[0]],
+            ["Runs Conceded", stats_list[1]]
+        ]
+    else:
+        data = [["Data", stats]]
     
-    st.write("### Ranked Teams")
+    df = pd.DataFrame(data, columns=columns)
     st.table(df)
-else:
-    st.write("Select 10 teams and click Rank Teams.")
