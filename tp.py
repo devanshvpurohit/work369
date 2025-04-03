@@ -29,11 +29,15 @@ def get_cricket_stats(player_name):
 # Streamlit UI
 st.title("🏏 Cricket Player Stats Viewer")
 
-# File uploader for CSV
-uploaded_file = st.file_uploader("Upload CSV file with player names", type=["csv"])
+# File uploader for CSV or Excel
+uploaded_file = st.file_uploader("Upload CSV or Excel file with player names", type=["csv", "xlsx"])
 
 if uploaded_file is not None:
-    players_df = pd.read_csv(uploaded_file)  # Ensure CSV has a 'Player Name' column
+    if uploaded_file.name.endswith(".csv"):
+        players_df = pd.read_csv(uploaded_file)
+    else:
+        players_df = pd.read_excel(uploaded_file)
+    
     selected_player = st.selectbox("Select a Player:", players_df["Player Name"].tolist())
     
     if st.button("Get Stats") and selected_player:
