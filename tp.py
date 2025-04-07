@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 import google.generativeai as genai
 
 # 🔹 Quick Fix: Hardcode the API key (Not recommended for production)
@@ -25,6 +26,26 @@ def get_cricket_stats(player_name):
     except Exception as e:
         return f"⚠️ Error fetching stats: {str(e)}"
 
+def parse_stats_to_df(stats, player_name):
+    columns = []
+    values = stats.split(",")
+    # Guess columns based on count
+    if len(values) == 3:
+        columns = ["Strike Rate", "Highest Score", "Batting Average"]
+    elif len(values) == 2:
+        columns = ["Average Wickets", "Runs Conceded"]
+    elif len(values) == 1:
+        columns = ["Stat"]
+    else:
+        return None
+
+    try:
+        df = pd.DataFrame([values], columns=columns)
+        df.insert(0, "Player Name", player_name)
+        return df
+    except Exception:
+        return None
+
 # Streamlit UI
 st.title("🏏 Cricket Player Stats Viewer")
 
@@ -32,5 +53,22 @@ player_name = st.text_input("Enter Player Name:")
 
 if st.button("Get Stats") and player_name:
     stats = get_cricket_stats(player_name)
-    st.markdown(f"### 📊 Stats for {player_name}")
-    st.write(stats)
+    
+    if "⚠️" in stats or "No data" in stats:
+        st.warning(stats)
+    else:
+        df = parse_stats_to_df(stats, player_name)
+        if df is not None:
+            st.markdown(f"### 📊 Stats for `{player_name}`")
+            st.dataframe(df, use_container_width=True)
+            
+            # Provide CSV download
+            csv = df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="📥 Download CSV",
+                data=csv,
+                file_name=f"{player_name}_stats.csv",
+                mime="text/csv"
+            )
+        else:
+            st.warning("⚠️ Could not parse stats into table format.")
