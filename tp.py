@@ -2,22 +2,19 @@ import streamlit as st
 import pandas as pd
 import google.generativeai as genai
 
-# 🔹 Quick Fix: Hardcode the API key (Not recommended for production)
-API_KEY = "AIzaSyAW_b4mee9l8eP931cqd9xqErHV34f7OEw"
-
 # Configure Gemini API
+API_KEY = "AIzaSyAW_b4mee9l8eP931cqd9xqErHV34f7OEw"
 genai.configure(api_key=API_KEY)
-
-# Define the model (using Gemini 1.5 Flash)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
 def get_cricket_stats(player_name):
     prompt = (
         f"Provide only the numerical cricket statistics for {player_name}. "
         "Include:\n"
+        "- Number of Matches played.\n"
         "- If the player is a batsman: Strike Rate, Highest Score, Batting Average.\n"
         "- If the player is a bowler: Average Wickets, Runs Conceded.\n"
-        "- If the player is an all-rounder: Strike Rate, Batting Average.\n"
+        "- If the player is an all-rounder: Number of Matches, Strike Rate, Batting Average.\n"
         "Respond with only the numbers separated by commas, nothing else."
     )
     try:
@@ -27,11 +24,12 @@ def get_cricket_stats(player_name):
         return f"⚠️ Error fetching stats: {str(e)}"
 
 def parse_stats_to_df(stats, player_name):
-    columns = []
-    values = stats.split(",")
-    # Guess columns based on count
-    if len(values) == 3:
-        columns = ["Strike Rate", "Highest Score", "Batting Average"]
+    values = [v.strip() for v in stats.split(",")]
+    
+    if len(values) == 4:
+        columns = ["Matches", "Strike Rate", "Highest Score", "Batting Average"]
+    elif len(values) == 3:
+        columns = ["Matches", "Strike Rate", "Batting Average"]
     elif len(values) == 2:
         columns = ["Average Wickets", "Runs Conceded"]
     elif len(values) == 1:
@@ -46,29 +44,48 @@ def parse_stats_to_df(stats, player_name):
     except Exception:
         return None
 
-# Streamlit UI
-st.title("🏏 Cricket Player Stats Viewer")
+# --- Streamlit UI ---
+st.title("🏏 Bulk Cricket Player Stats Viewer")
 
-player_name = st.text_input("Enter Player Name:")
+option = st.radio("Choose input method:", ("Text Input", "Upload CSV"))
 
-if st.button("Get Stats") and player_name:
-    stats = get_cricket_stats(player_name)
-    
-    if "⚠️" in stats or "No data" in stats:
-        st.warning(stats)
-    else:
-        df = parse_stats_to_df(stats, player_name)
-        if df is not None:
-            st.markdown(f"### 📊 Stats for `{player_name}`")
-            st.dataframe(df, use_container_width=True)
-            
-            # Provide CSV download
-            csv = df.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                label="📥 Download CSV",
-                data=csv,
-                file_name=f"{player_name}_stats.csv",
-                mime="text/csv"
-            )
+player_names = []
+
+if option == "Text Input":
+    multiline_input = st.text_area("Enter player names (one per line):")
+    if multiline_input:
+        player_names = [name.strip() for name in multiline_input.strip().split("\n") if name.strip()]
+elif option == "Upload CSV":
+    uploaded_file = st.file_uploader("Upload CSV with column 'Player Name'", type="csv")
+    if uploaded_file:
+        df_input = pd.read_csv(uploaded_file)
+        if "Player Name" in df_input.columns:
+            player_names = df_input["Player Name"].dropna().astype(str).tolist()
         else:
-            st.warning("⚠️ Could not parse stats into table format.")
+            st.error("CSV must contain a column named 'Player Name'.")
+
+if st.button("🔍 Fetch Stats") and player_names:
+    all_stats = []
+    with st.spinner("Fetching stats..."):
+        for i, name in enumerate(player_names):
+            stats = get_cricket_stats(name)
+            df = parse_stats_to_df(stats, name)
+            if df is not None:
+                all_stats.append(df)
+            else:
+                st.warning(f"Could not parse stats for: {name}")
+    
+    if all_stats:
+        final_df = pd.concat(all_stats, ignore_index=True)
+        st.success(f"✅ Stats fetched for {len(final_df)} players.")
+        st.dataframe(final_df, use_container_width=True)
+
+        csv = final_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="📥 Download All Stats as CSV",
+            data=csv,
+            file_name="all_player_stats.csv",
+            mime="text/csv"
+        )
+    else:
+        st.error("No valid stats found.")
