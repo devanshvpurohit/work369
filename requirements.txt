@@ -2,7 +2,8 @@
 streamlit>=1.22.0
 pandas>=1.5.3
 numpy>=1.24.2
-
+requests
+bs4 
 # Document processing
 PyMuPDF>=1.21.1
 python-docx>=0.8.11
