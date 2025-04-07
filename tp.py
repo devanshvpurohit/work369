@@ -21,7 +21,7 @@ def get_cricket_stats(player_name, role):
             f"Provide only the numerical cricket statistics for {player_name}. "
             "Include:\n"
             "- Number of Matches played.\n"
-            "- Average Wickets, Runs Conceded.\n"
+            "- Average Economy, Runs Conceded.\n"
             "Respond with only the numbers separated by commas, nothing else."
         )
     elif role == "All-rounder":
@@ -49,7 +49,7 @@ def parse_stats_to_df(stats, player_name, role):
     elif role == "Bowler":
         if len(values) != 3:
             return None
-        columns = ["Matches", "Average Wickets", "Runs Conceded"]
+        columns = ["Matches", "Average Economy", "Runs Conceded"]
     elif role == "All-rounder":
         if len(values) != 3:
             return None
